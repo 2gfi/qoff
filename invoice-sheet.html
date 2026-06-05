@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QOff — Demande de facture</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="screen">
+  <!-- Fond simulant la confirmation en dessous -->
+  <div style="flex:1;background:var(--bg);opacity:0.4;pointer-events:none;position:absolute;inset:0;z-index:0"></div>
+
+  <div class="sheet-overlay" style="position:fixed;display:flex;z-index:10">
+    <div class="sheet">
+      <div class="handle"></div>
+      <h3>Demander une facture</h3>
+      <p>Renseignez vos coordonnées de facturation. Les champs marqués * sont obligatoires.</p>
+
+      <div class="inv-fields">
+        <div class="fg"><label class="flbl">Prénom *</label><div class="finp">Camille</div></div>
+        <div class="fg"><label class="flbl">Nom *</label><div class="finp">Roux</div></div>
+        <div class="fg"><label class="flbl">Adresse *</label><div class="finp">Quai de Belgique 3</div></div>
+        <div class="fg"><label class="flbl">Ville & NPA *</label><div class="finp">1003 Lausanne</div></div>
+        <div class="fg"><label class="flbl">Entreprise (facultatif)</label><div class="finp" style="color:var(--ink-4)">—</div></div>
+        <div class="fg" style="margin-bottom:0"><label class="flbl">Email</label><div class="finp">camille@email.ch</div></div>
+      </div>
+
+      <a href="invoice-pdf.html" class="btn-primary" style="margin-top:16px;display:inline-flex">
+        Vérifier
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+</body>
+</html>

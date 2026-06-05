@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QOff — Mon compte</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="screen">
+  <nav class="topbar sub-topbar">
+    <button class="topbar-icon" onclick="history.back()" id="btn-back"></button>
+    <span class="sub-topbar-title">Mon compte</span>
+    <span style="width:44px"></span>
+  </nav>
+
+  <div class="scroll-area">
+    <!-- Profil -->
+    <div class="profile">
+      <div class="acct-avatar">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </div>
+      <div class="acct-name">Camille Roux</div>
+      <div class="acct-phone t-mono">+41 79 412 88 30</div>
+      <span class="logged-badge"><span class="dot" style="background:currentColor"></span> Connecté</span>
+      <div class="profile-stats">
+        <div class="profile-stat"><span class="profile-stat-n t-mono">12</span><span class="profile-stat-l">commandes</span></div>
+        <div class="profile-stat"><span class="profile-stat-n t-mono">3</span><span class="profile-stat-l">favoris</span></div>
+        <div class="profile-stat"><span class="profile-stat-n t-mono">284.–</span><span class="profile-stat-l">CHF dépensés</span></div>
+      </div>
+    </div>
+
+    <!-- Liste liens -->
+    <div class="account-list">
+      <a href="orders.html" class="menu-item">
+        <span class="menu-item-ic" id="ic-orders"></span>
+        <span class="menu-item-body"><span class="menu-item-label">Mes commandes</span><span class="menu-item-sub">12 commandes</span></span>
+        <span id="ic-chevr1"></span>
+      </a>
+      <a href="payment-methods.html" class="menu-item">
+        <span class="menu-item-ic" id="ic-pay"></span>
+        <span class="menu-item-body"><span class="menu-item-label">Moyens de paiement</span><span class="menu-item-sub">Twint · Visa ••42</span></span>
+        <span id="ic-chevr2"></span>
+      </a>
+      <a href="favorite-bars.html" class="menu-item">
+        <span class="menu-item-ic" id="ic-fav"></span>
+        <span class="menu-item-body"><span class="menu-item-label">Bars favoris</span><span class="menu-item-sub">3 enregistrés</span></span>
+        <span id="ic-chevr3"></span>
+      </a>
+      <a href="help.html" class="menu-item">
+        <span class="menu-item-ic" id="ic-help"></span>
+        <span class="menu-item-body"><span class="menu-item-label">Aide et contact</span><span class="menu-item-sub">FAQ · nous écrire</span></span>
+        <span id="ic-chevr4"></span>
+      </a>
+      <button class="menu-item" id="btn-notif">
+        <span class="menu-item-ic" id="ic-bell"></span>
+        <span class="menu-item-body"><span class="menu-item-label">Notifications</span><span class="menu-item-sub">Activées</span></span>
+        <span id="ic-chevr5"></span>
+      </button>
+    </div>
+
+    <!-- Langue -->
+    <div class="account-lang">
+      <span class="t-label" style="display:block;margin-bottom:10px">Langue</span>
+      <div class="lang-switch" style="width:100%">
+        <button class="active" style="flex:1;padding:9px 0;font-size:13px">FR</button>
+        <button style="flex:1;padding:9px 0;font-size:13px">DE</button>
+        <button style="flex:1;padding:9px 0;font-size:13px">IT</button>
+        <button style="flex:1;padding:9px 0;font-size:13px">EN</button>
+      </div>
+    </div>
+
+    <button class="logout" id="btn-logout">Se déconnecter</button>
+    <div style="height:24px"></div>
+  </div>
+
+  <!-- Modale déconnexion -->
+  <div class="modal-overlay" id="logout-modal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-ic">👋</div>
+      <div class="modal-ttl">Vous déconnecter&nbsp;?</div>
+      <div class="modal-txt">Vous devrez vous identifier à nouveau pour passer une commande.</div>
+      <div class="modal-btns">
+        <button class="btn-primary" style="background:var(--red)" onclick="doLogout()">Oui, j'ai assez bu</button>
+        <button class="btn-ghost" onclick="document.getElementById('logout-modal').style.display='none'">Annuler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="icons.js"></script>
+<script>
+  document.getElementById('btn-back').innerHTML   = IC.back;
+  document.getElementById('ic-orders').innerHTML  = IC.receipt;
+  document.getElementById('ic-pay').innerHTML     = IC.card;
+  document.getElementById('ic-fav').innerHTML     = IC.heart;
+  document.getElementById('ic-help').innerHTML    = IC.chat;
+  document.getElementById('ic-bell').innerHTML    = IC.bell;
+  ['ic-chevr1','ic-chevr2','ic-chevr3','ic-chevr4','ic-chevr5'].forEach(id => {
+    document.getElementById(id).innerHTML = IC.chevR;
+  });
+
+  // Langue
+  document.querySelectorAll('.lang-switch button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.lang-switch button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    document.getElementById('logout-modal').style.display = 'flex';
+  });
+
+  function doLogout() {
+    setConnected(false);
+    window.location.href = 'account-login.html';
+  }
+</script>
+</body>
+</html>

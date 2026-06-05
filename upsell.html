@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QOff — Suggestion</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="screen">
+  <nav class="topbar sub-topbar">
+    <button class="topbar-icon" onclick="history.back()" id="btn-back"></button>
+    <span style="width:44px"></span>
+    <span style="width:44px"></span>
+  </nav>
+
+  <div class="scroll-area" style="padding:8px 18px 18px">
+    <h1 class="sttl">Une petite faim&nbsp;?</h1>
+    <p class="ssub">Un accompagnement avec votre commande, ça tente quelqu'un&nbsp;?</p>
+
+    <div class="up-card">
+      <span class="up-emoji" id="up-emoji"></span>
+      <div class="up-info">
+        <div class="up-name" id="up-name"></div>
+        <div class="up-desc" id="up-desc"></div>
+        <div class="up-price t-mono" id="up-price"></div>
+      </div>
+      <div class="up-btns">
+        <button class="up-yes" id="btn-yes"></button>
+      </div>
+    </div>
+
+    <div class="up-note" id="up-note"></div>
+  </div>
+
+  <div class="sticky-cta">
+    <a class="btn-primary" id="btn-continue" href="#">Continuer <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="icons.js"></script>
+<script>
+  document.getElementById('btn-back').innerHTML = IC.back;
+
+  document.getElementById('up-emoji').textContent = UPSELL.emoji;
+  document.getElementById('up-name').textContent  = UPSELL.name;
+  document.getElementById('up-desc').textContent  = UPSELL.desc;
+  document.getElementById('up-price').textContent = formatPrice(UPSELL.price);
+  document.getElementById('btn-yes').innerHTML    = `${IC.plus} Ajouter`;
+  document.getElementById('up-note').innerHTML    = `${IC.checkCircle}<span>Vous pourrez toujours en ajouter plus tard depuis la carte.</span>`;
+
+  document.getElementById('btn-yes').addEventListener('click', () => {
+    const cart = getCart();
+    cart[UPSELL.id] = (cart[UPSELL.id]||0) + 1;
+    setCart(cart);
+    goNext();
+  });
+
+  function goNext() {
+    // Scénario selon état connexion
+    if (isConnected()) {
+      window.location.href = 'payment.html';
+    } else {
+      window.location.href = 'login-phone.html';
+    }
+  }
+
+  document.getElementById('btn-continue').addEventListener('click', e => {
+    e.preventDefault();
+    goNext();
+  });
+</script>
+</body>
+</html>

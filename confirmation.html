@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QOff — Confirmation</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="screen">
+  <div class="conf-topbar">
+    <span style="width:44px"></span>
+    <a class="topbar-icon" href="index.html" aria-label="Fermer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </a>
+  </div>
+
+  <div class="scroll-area">
+    <!-- Hero sombre -->
+    <div class="conf-hero">
+      <div class="conf-ck">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-9"/></svg>
+      </div>
+      <div class="conf-ttl">Commande envoyée&nbsp;!</div>
+      <div class="conf-sub">Le Jetée prépare votre commande</div>
+    </div>
+
+    <div class="conf-body">
+      <!-- Statut -->
+      <div class="stat-card">
+        <div class="stat-lbl">Statut</div>
+        <div class="stat-val" id="stat-val">
+          <span class="pulse dark"></span> En préparation… ≈ 6 min
+        </div>
+      </div>
+
+      <!-- Restez sur la page -->
+      <div class="stay-box">
+        <span class="stay-ic">📱</span>
+        <span><strong>Restez sur cette page</strong> — elle se met à jour automatiquement dès que votre commande est prête.</span>
+      </div>
+
+      <!-- Code + QR -->
+      <div class="code-box">
+        <div class="code-lbl">Code de retrait</div>
+        <div class="code-dig t-mono">4827</div>
+        <div class="qr-scene" id="qr-scene">
+          <div class="qr-card" id="qr-card">
+            <div class="qr-front" id="qr-front"></div>
+            <div class="qr-back">
+              <button class="qr-back-btn" onclick="flipQr()">Afficher le QR</button>
+              <div class="qr-back-sub">Montrez ce code au barman pour récupérer</div>
+            </div>
+          </div>
+        </div>
+        <div class="qr-hint">Touchez le QR pour le retourner</div>
+      </div>
+
+      <!-- Détail commande -->
+      <div class="odet-box" id="odet-box"></div>
+
+      <!-- Actions -->
+      <div class="conf-actions">
+        <a href="orders.html" class="btn-ghost">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18l2-1.5L9 21l2-1.5L13 21l2-1.5L17 21l2-1.5V3l-2 1.5L15 3l-2 1.5L11 3 9 4.5 7 3z"/><path d="M8 8h8M8 12h8"/></svg>
+          Mes commandes
+        </a>
+        <a href="menu.html" class="btn-ghost">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          Repasser une commande
+        </a>
+        <button class="btn-ghost" onclick="window.location='invoice-sheet.html'">🧾 Demander une facture</button>
+      </div>
+
+      <div style="height:20px"></div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="icons.js"></script>
+<script>
+  // QR placeholder SVG
+  function makeQr(size) {
+    const n = 21, cell = size/n;
+    let mods = '';
+    let seed = 7;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    for (let y=0; y<n; y++) for (let x=0; x<n; x++) {
+      const finder = (x<7&&y<7)||(x>=n-7&&y<7)||(x<7&&y>=n-7);
+      if (finder) continue;
+      if (rnd() > 0.55) mods += `<rect x="${x*cell}" y="${y*cell}" width="${cell}" height="${cell}" fill="#0D0D0D"/>`;
+    }
+    const F = (fx,fy) => `<g><rect x="${fx}" y="${fy}" width="${cell*7}" height="${cell*7}" fill="#0D0D0D"/><rect x="${fx+cell}" y="${fy+cell}" width="${cell*5}" height="${cell*5}" fill="#fff"/><rect x="${fx+cell*2}" y="${fy+cell*2}" width="${cell*3}" height="${cell*3}" fill="#0D0D0D"/></g>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <rect width="${size}" height="${size}" fill="#fff"/>
+      ${mods}${F(0,0)}${F((n-7)*cell,0)}${F(0,(n-7)*cell)}
+    </svg>`;
+  }
+  document.getElementById('qr-front').innerHTML = makeQr(120);
+
+  // Flip QR
+  let flipped = false;
+  function flipQr() { flipped = !flipped; document.getElementById('qr-card').classList.toggle('flipped', flipped); }
+  document.getElementById('qr-scene').addEventListener('click', flipQr);
+
+  // Détail commande
+  const cart = getCart();
+  let orderItems = [];
+  MENU.categories.forEach(c => c.items.forEach(it => {
+    const q = cart[it.id]; if (q) orderItems.push({...it, qty:q});
+  }));
+  if (!orderItems.length) orderItems = SAMPLE_CART.map(i => ({...ITEMS[i.id],...i}));
+
+  const total = orderItems.reduce((a,i) => a + i.qty*(i.hhPrice!=null?i.hhPrice:i.price), 0);
+  const rows  = orderItems.map(i => `<div class="odr"><span><span class="t-mono ink-3">${i.qty}×</span> ${i.name}</span><span class="t-mono">${formatPrice(i.qty*(i.hhPrice!=null?i.hhPrice:i.price))}</span></div>`).join('');
+  document.getElementById('odet-box').innerHTML = rows + `<div class="odr odr-tot"><span>Total payé</span><span class="t-mono">${formatPrice(total)}</span></div>`;
+
+  // Simuler passage "prêt" après 8s
+  setTimeout(() => {
+    document.getElementById('stat-val').innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg>
+      <span style="color:var(--green)">Prête — présentez votre code</span>`;
+  }, 8000);
+
+  // Vider le panier
+  setCart({});
+</script>
+</body>
+</html>

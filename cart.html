@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QOff — Panier</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="screen">
+  <nav class="topbar sub-topbar">
+    <button class="topbar-icon" onclick="history.back()" aria-label="Retour" id="btn-back"></button>
+    <span class="logo center-logo">Q<em>O</em>ff</span>
+    <span style="width:44px"></span>
+  </nav>
+
+  <div class="scroll-area" id="main"></div>
+
+  <div class="sticky-cta" id="sticky-cta"></div>
+</div>
+
+<script src="data.js"></script>
+<script src="icons.js"></script>
+<script>
+  document.getElementById('btn-back').innerHTML = IC.back;
+  const barId = getSelectedBar();
+  const bar   = BARS.find(b => b.id === barId) || BARS[0];
+
+  // Initialiser le panier avec SAMPLE_CART si vide
+  let cart = getCart();
+  if (Object.keys(cart).length === 0) {
+    SAMPLE_CART.forEach(i => { cart[i.id] = i.qty; });
+    setCart(cart);
+  }
+
+  let note = '';
+
+  function render() {
+    const items = [];
+    MENU.categories.forEach(c => c.items.forEach(it => {
+      const q = cart[it.id];
+      if (q) items.push({ ...it, qty: q });
+    }));
+
+    const main = document.getElementById('main');
+    const cta  = document.getElementById('sticky-cta');
+
+    if (items.length === 0) {
+      main.innerHTML = `
+        <div class="empty">
+          <div class="empty-ic">🛒</div>
+          <div class="empty-ttl">Votre panier est vide</div>
+          <div class="empty-sub">Ajoutez quelques boissons depuis la carte pour commencer.</div>
+          <a class="btn-primary" href="menu.html?bar=${barId}" style="width:auto;margin-top:22px;padding:13px 28px">Voir la carte</a>
+        </div>`;
+      cta.innerHTML = '';
+      return;
+    }
+
+    let subtotal = 0, savings = 0;
+    items.forEach(i => {
+      const unitP = i.hhPrice != null ? i.hhPrice : i.price;
+      subtotal += i.qty * unitP;
+      if (i.hhPrice != null) savings += i.qty * (i.price - i.hhPrice);
+    });
+
+    const itemsHtml = items.map(i => {
+      const unitP = i.hhPrice != null ? i.hhPrice : i.price;
+      return `
+        <div class="ci-row">
+          <span class="ci-emoji">${i.emoji}</span>
+          <div class="ci-info">
+            <div class="ci-name">${i.name} ${i.hhPrice!=null?'<span class="price-tag sm">HH</span>':''}</div>
+            <div class="ci-sub t-mono">${i.qty} × ${formatPrice(unitP)}</div>
+          </div>
+          <div class="qctrl">
+            <button class="qbtn mi" data-act="minus" data-id="${i.id}">${IC.minus}</button>
+            <span class="qnum t-mono">${i.qty}</span>
+            <button class="qbtn pl"  data-act="plus"  data-id="${i.id}">${IC.plus}</button>
+          </div>
+          <div class="ci-line t-mono">${formatPrice(i.qty * unitP)}</div>
+        </div>`;
+    }).join('');
+
+    main.innerHTML = `
+      <div class="cart-context">
+        <span class="cart-context-emoji">${bar.emoji}</span>
+        <div>
+          <div class="cart-context-name">${bar.name}</div>
+          <div class="cart-context-sub">Récupération sur place · ${bar.address.split(',')[0]}</div>
+        </div>
+      </div>
+      <div class="cart-items">${itemsHtml}</div>
+      <a href="menu.html?bar=${barId}" class="add-more">${IC.plus} Choisir d'autres conso</a>
+      <div class="note-wrap-block">
+        <label class="t-label">Note pour le barman</label>
+        <div class="note-wrap">
+          <textarea class="note-ta" maxlength="100" rows="2" id="note-ta" placeholder="Ex. : sans glace, citron à part…">${note}</textarea>
+          <span class="note-ctr t-mono" id="note-ctr">${note.length}/100</span>
+        </div>
+      </div>
+      <div class="sum-box">
+        ${savings > 0 ? `<div class="srow" style="color:var(--green)"><span>Économies Happy Hour</span><span class="t-mono">−${formatPrice(savings)}</span></div>` : ''}
+        <div class="srow"><span>Sous-total</span><span class="t-mono">${formatPrice(subtotal)}</span></div>
+        <div class="srow"><span>Service</span><span class="t-mono" style="color:var(--green)">Offert</span></div>
+        <div class="srow tot"><span>Total</span><span class="t-mono">${formatPrice(subtotal)}</span></div>
+      </div>
+      <div style="height:20px"></div>`;
+
+    cta.innerHTML = `<a href="upsell.html" class="btn-primary">Continuer · <span class="t-mono">${formatPrice(subtotal)}</span></a>`;
+
+    // Note compteur
+    const ta = document.getElementById('note-ta');
+    ta.addEventListener('input', () => {
+      note = ta.value;
+      document.getElementById('note-ctr').textContent = note.length + '/100';
+    });
+
+    // Steppers
+    main.querySelectorAll('[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (btn.dataset.act === 'plus')  { cart[id] = (cart[id]||0) + 1; }
+        else { cart[id] = Math.max(0, (cart[id]||0) - 1); if (!cart[id]) delete cart[id]; }
+        setCart(cart);
+        render();
+      });
+    });
+  }
+
+  render();
+</script>
+</body>
+</html>

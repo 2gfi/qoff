@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QOff — Carte</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="screen" id="screen">
+  <!-- Topbar logo centré -->
+  <nav class="topbar sub-topbar" id="topbar">
+    <a class="topbar-icon" href="bar-detail.html" id="btn-back" aria-label="Retour"></a>
+    <span class="logo center-logo">Q<em>O</em>ff</span>
+    <div class="topbar-actions">
+      <a class="topbar-icon" href="orders.html" aria-label="Historique" id="ic-history"></a>
+      <button class="topbar-icon dk cart-icon" id="btn-cart" aria-label="Panier" onclick="window.location='cart.html'"></button>
+    </div>
+  </nav>
+
+  <!-- Scrollable -->
+  <div class="scroll-area" id="main">
+    <!-- Bar hero card -->
+    <div class="bar-hero" id="bar-hero"></div>
+
+    <!-- Bannière Recommander (si connecté) -->
+    <div id="reco-wrap" style="margin:10px 0 0"></div>
+
+    <!-- Temps d'attente -->
+    <div class="menu-wait" id="wait-wrap"></div>
+
+    <!-- Pills catégories -->
+    <div class="cat-scroll" id="cat-scroll"></div>
+
+    <!-- Sous-filtres -->
+    <div class="subfilter-bar" id="subfilter-bar" style="display:none"></div>
+
+    <!-- Articles -->
+    <div class="menu-items" id="menu-items"></div>
+
+    <div style="height:100px"></div>
+  </div>
+
+  <!-- CTA panier sticky -->
+  <div class="cart-bar-wrap" id="cart-bar-wrap" style="display:none">
+    <button class="ccta" id="ccta" onclick="window.location='cart.html'">
+      <span class="ccta-l" id="ccta-l">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        Commande en cours
+      </span>
+      <span class="ccta-p t-mono" id="ccta-p"></span>
+    </button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" style="display:none"></div>
+
+  <!-- Modale "Quitter ce bar ?" -->
+  <div class="modal-overlay" id="leave-modal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-ic">⚠️</div>
+      <div class="modal-ttl">Quitter ce bar&nbsp;?</div>
+      <div class="modal-txt">Vous avez des articles dans votre panier. Si vous changez de bar, il sera perdu.</div>
+      <div class="modal-btns">
+        <button class="btn-primary" onclick="confirmLeave()">Oui, changer de bar</button>
+        <button class="btn-ghost" onclick="document.getElementById('leave-modal').style.display='none'">Annuler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="icons.js"></script>
+<script>
+  const barId = (new URLSearchParams(location.search)).get('bar') || getSelectedBar();
+  setSelectedBar(barId);
+  const bar = BARS.find(b => b.id === barId) || BARS[0];
+
+  // Back link
+  document.getElementById('btn-back').innerHTML = IC.back;
+  document.getElementById('btn-back').href = `bar-detail.html?bar=${barId}`;
+  document.getElementById('ic-history').innerHTML = IC.receipt;
+
+  // ── État ──
+  let cart   = getCart();
+  let cat    = 'all';
+  let subf   = 'Tout';
+  let isFav  = getFavs().has(barId);
+  const hasHistory = isConnected();
+
+  // ── Bar hero ──
+  function renderHero() {
+    document.getElementById('bar-hero').innerHTML = `
+      <div class="bar-hero-body">
+        <div class="bh-name-row">
+          <div class="bh-name">${bar.name}</div>
+          <button class="hero-fav bh-fav${isFav?' on':''}" id="btn-fav"
+            style="color:${isFav?'#F5B301':'rgba(255,255,255,0.72)'}" aria-label="Favori">
+            ${IC.starSm(isFav?'#F5B301':'none')}
+          </button>
+        </div>
+        <div class="bh-addr">${bar.address}</div>
+        <span class="bh-open"><span class="pulse"></span>Ouvert · ferme à 01:00</span>
+      </div>
+      <a href="bar-detail.html?bar=${barId}" style="font-size:18px;opacity:0.5;position:relative;color:#fff;text-decoration:none">ⓘ</a>`;
+    document.getElementById('btn-fav').addEventListener('click', () => {
+      const f = toggleFav(barId);
+      isFav = f.has(barId);
+      renderHero();
+    });
+  }
+  renderHero();
+
+  // ── Bannière Recommander ──
+  if (hasHistory) {
+    document.getElementById('reco-wrap').innerHTML = `
+      <div class="reco-banner">
+        <div class="reco-body">
+          <div class="reco-label">Recommander</div>
+          <div class="reco-preview">Votre dernier passage : 🍺 Blanche · 🍹 Spritz …</div>
+        </div>
+        <a href="recommander.html" class="reco-cta">Voir ${IC.arrowR}</a>
+      </div>`;
+  }
+
+  // ── Catégories ──
+  const cats = [{ id:'all', label:'Tout', icon:'✦' }, ...MENU.categories.map(c=>({id:c.id,label:c.label,icon:c.icon}))];
+
+  function pickCat(id) {
+    cat = id; subf = 'Tout';
+    renderCatPills();
+    renderSubfilters();
+    renderItems();
+    renderWait();
+  }
+
+  function renderCatPills() {
+    const el = document.getElementById('cat-scroll');
+    el.innerHTML = '';
+    cats.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = `cpill${cat===c.id?' on':''}`;
+      btn.innerHTML = `<span class="cpill-ic">${c.icon}</span>${c.label}`;
+      btn.addEventListener('click', () => pickCat(c.id));
+      el.appendChild(btn);
+    });
+  }
+
+  function renderSubfilters() {
+    const sf = document.getElementById('subfilter-bar');
+    if (cat === 'all') { sf.style.display = 'none'; return; }
+    const activeCat = MENU.categories.find(c => c.id === cat);
+    if (!activeCat || !activeCat.filters) { sf.style.display = 'none'; return; }
+    sf.style.display = 'flex';
+    sf.innerHTML = '';
+    ['Tout', ...activeCat.filters].forEach(f => {
+      const btn = document.createElement('button');
+      btn.className = `sfpill${subf===f?' on':''}`;
+      btn.textContent = f;
+      btn.addEventListener('click', () => { subf = f; renderSubfilters(); });
+      sf.appendChild(btn);
+    });
+  }
+
+  function renderWait() {
+    const el = document.getElementById('wait-wrap');
+    el.style.display = cat === 'all' ? 'block' : 'none';
+    el.innerHTML = `<span class="wait-bdg">${IC.clock} Temps d'attente estimé · ≈ ${bar.wait} min</span>`;
+  }
+
+  // ── Items ──
+  function renderItems() {
+    const shown = cat === 'all' ? MENU.categories : MENU.categories.filter(c => c.id === cat);
+    const el = document.getElementById('menu-items');
+    el.innerHTML = '';
+    shown.forEach(c => {
+      const wrap = document.createElement('div');
+      wrap.className = 'menu-cat';
+      const headHtml = `<div class="sec-ttl-row">
+        <h3 class="sec-ttl">${c.label}</h3>
+        ${c.id==='biere'&&bar.happyHour?`<span class="badge badge-hh">${IC.sun} Happy Hour −50%</span>`:''}
+      </div>`;
+      wrap.innerHTML = headHtml;
+      c.items.forEach(it => {
+        wrap.appendChild(makeItemCard(it));
+      });
+      el.appendChild(wrap);
+    });
+  }
+
+  function makeItemCard(item) {
+    const sold = item.soldOut;
+    const hh   = item.hhPrice != null;
+    const sale = item.oldPrice != null;
+    const qty  = cart[item.id] || 0;
+
+    const card = document.createElement('button');
+    card.className = `icard${sold?' sold':''}`;
+    card.dataset.id = item.id;
+
+    let priceHtml;
+    if (hh)   priceHtml = `<span class="price-original t-mono">${formatPrice(item.price)}</span><span class="price-sale t-mono">${formatPrice(item.hhPrice)}</span>`;
+    else if (sale) priceHtml = `<span class="price-original t-mono">${formatPrice(item.oldPrice)}</span><span class="price-sale t-mono">${formatPrice(item.price)}</span>`;
+    else      priceHtml = `<span class="iprice t-mono">${formatPrice(item.price)}</span>`;
+
+    const tagMap = { vege:'tag-vege', vegan:'tag-vegan', solde:'tag-solde' };
+    const tagLabel = { vege:'Végé', vegan:'Vegan', solde:'Promo' };
+    const tagsHtml = item.tags ? `<div class="itags">${item.tags.map(t=>`<span class="tag ${tagMap[t]||''}">${tagLabel[t]||t}</span>`).join('')}</div>` : '';
+
+    let actHtml;
+    if (sold) {
+      actHtml = `<span class="sold-tag">Épuisé</span>`;
+    } else if (qty > 0) {
+      actHtml = `<div class="qctrl" onclick="event.stopPropagation()">
+        <button class="qbtn mi" data-act="minus" data-id="${item.id}">${IC.minus}</button>
+        <span class="qnum t-mono" id="qn-${item.id}">${qty}</span>
+        <button class="qbtn pl" data-act="plus"  data-id="${item.id}">${IC.plus}</button>
+      </div>`;
+    } else {
+      actHtml = `<button class="iadd" onclick="event.stopPropagation();addItem('${item.id}')" aria-label="Ajouter">${IC.plus}</button>`;
+    }
+
+    card.innerHTML = `
+      <div class="ithumb">${item.emoji}</div>
+      <div class="iinfo">
+        <div class="iname">${item.name}</div>
+        <div class="idesc">${item.desc}</div>
+        ${tagsHtml}
+        <div class="iprice-wrap">${priceHtml}</div>
+      </div>
+      <div class="iact">${actHtml}</div>`;
+
+    card.addEventListener('click', () => {
+      window.location.href = `item-detail.html?item=${item.id}&bar=${barId}`;
+    });
+    // stepper events
+    card.querySelectorAll('[data-act]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        if (btn.dataset.act === 'plus') addItem(id);
+        else removeItem(id);
+      });
+    });
+    return card;
+  }
+
+  function addItem(id) {
+    cart[id] = (cart[id]||0) + 1;
+    setCart(cart);
+    renderItems();
+    updateCartBar();
+    showToast(ITEMS[id]?.name + ' ajouté au panier');
+  }
+  function removeItem(id) {
+    cart[id] = Math.max(0, (cart[id]||0) - 1);
+    if (!cart[id]) delete cart[id];
+    setCart(cart);
+    renderItems();
+    updateCartBar();
+  }
+
+  // ── Cart bar ──
+  function updateCartBar() {
+    const count = cartCount(cart);
+    const total = cartTotal(cart);
+    const wrap  = document.getElementById('cart-bar-wrap');
+    wrap.style.display = count > 0 ? 'block' : 'none';
+    document.getElementById('ccta-p').textContent = formatPrice(total);
+    // badge
+    const badgeEl = document.getElementById('cart-badge');
+    const btnCart = document.getElementById('btn-cart');
+    btnCart.innerHTML = `${IC.bag}<span class="cart-count t-mono"${count>0?'':' style="display:none"'}>${count}</span>`;
+  }
+
+  // ── Toast ──
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2000);
+  }
+
+  // ── Quitter modal ──
+  function confirmLeave() {
+    setCart({});
+    document.getElementById('leave-modal').style.display = 'none';
+    window.location.href = 'index.html';
+  }
+
+  // ── Init ──
+  renderCatPills();
+  renderSubfilters();
+  renderWait();
+  renderItems();
+  updateCartBar();
+</script>
+</body>
+</html>
