@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QOff — Back-Office Super Admin</title>
+<link rel="stylesheet" href="admin.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #f0eee9; }
+  #root { height: 100vh; }
+  .qadmin.ab { width: 100%; height: 100%; overflow: hidden; border-radius: 12px; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- plain JS helpers (depend on React global at call-time) -->
+<script src="icons.jsx"></script>
+<script src="data.jsx"></script>
+
+<!-- JSX (compiled by Babel; share one global lexical env) -->
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="mod-supervision.jsx"></script>
+<script type="text/babel" src="mod-establishments.jsx"></script>
+<script type="text/babel" src="mod-data.jsx"></script>
+<script type="text/babel" src="mod-config.jsx"></script>
+<script type="text/babel" src="mod-backoffice.jsx"></script>
+<script type="text/babel" src="mod-impersonation.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const APP_W = 1440, APP_H = 920;
+
+function AB({ initialModule, imp }) {
+  return (
+    <div className="qadmin ab">
+      <AdminApp initialModule={initialModule} initialImpersonation={imp ? window.QData.bars.find(b => b.id === imp) : null} />
+    </div>
+  );
+}
+
+function Canvas() {
+  return (
+    <DesignCanvas>
+      <DCSection id="acces" title="Accès & coque" subtitle="Console Super Admin — login">
+        <DCArtboard id="login" label="Login · Super Admin Console" width={1280} height={820}>
+          <div className="qadmin ab"><LoginScreen /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="supervision" title="Supervision" subtitle="Dashboard · Santé services · Audit trail">
+        <DCArtboard id="dashboard" label="Dashboard · Vue globale" width={APP_W} height={APP_H}><AB initialModule="dashboard" /></DCArtboard>
+        <DCArtboard id="health" label="Santé services · Monitoring" width={APP_W} height={APP_H}><AB initialModule="health" /></DCArtboard>
+        <DCArtboard id="audit" label="Audit trail · Journal immuable" width={APP_W} height={APP_H}><AB initialModule="audit" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="etablissements" title="Établissements" subtitle="Bars · Patrons · Pays & Config">
+        <DCArtboard id="bars" label="Bars · Gestion des établissements" width={APP_W} height={APP_H}><AB initialModule="bars" /></DCArtboard>
+        <DCArtboard id="patrons" label="Patrons · Comptes B2B" width={APP_W} height={APP_H}><AB initialModule="patrons" /></DCArtboard>
+        <DCArtboard id="countries" label="Pays & Internationalisation" width={APP_W} height={APP_H}><AB initialModule="countries" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="donnees" title="Données" subtitle="Clients (RGPD) · Transactions · Commissions">
+        <DCArtboard id="clients" label="Clients · Accès restreint" width={APP_W} height={APP_H}><AB initialModule="clients" /></DCArtboard>
+        <DCArtboard id="transactions" label="Transactions · PSP" width={APP_W} height={APP_H}><AB initialModule="transactions" /></DCArtboard>
+        <DCArtboard id="commissions" label="Commissions · Finances" width={APP_W} height={APP_H}><AB initialModule="commissions" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="config" title="Configuration & Équipe" subtitle="Catégories · Feature flags · Réglages · Comptes admin">
+        <DCArtboard id="categories" label="Bibliothèque catégories" width={APP_W} height={APP_H}><AB initialModule="categories" /></DCArtboard>
+        <DCArtboard id="flags" label="Feature flags" width={APP_W} height={APP_H}><AB initialModule="flags" /></DCArtboard>
+        <DCArtboard id="settings" label="Réglages plateforme" width={APP_W} height={APP_H}><AB initialModule="settings" /></DCArtboard>
+        <DCArtboard id="admins" label="Comptes admin · Équipe QOff" width={APP_W} height={APP_H}><AB initialModule="admins" /></DCArtboard>
+      </DCSection>
+
+      <DCSection id="impersonation" title="Mode impersonation" subtitle="Back-office patron piloté par l'admin — orange = patron · violet = Super Admin">
+        <DCArtboard id="imp" label="Mode gestion · Le Jetée (impersonation)" width={APP_W} height={APP_H}><AB initialModule="bars" imp="B01" /></DCArtboard>
+        <DCPostIt top={30} right={-150} rotate={3}>Color-coding : les boutons <b>violets</b> sont réservés au Super Admin et invisibles pour le patron. Les boutons <b>oranges</b> sont les actions habituelles du patron.</DCPostIt>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Canvas />);
+</script>
+
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="#0A0A0A"/>
+  <text x="50" y="46" text-anchor="middle" font-family="system-ui" font-weight="800" font-size="26" fill="#fff">Q<tspan fill="#FF6B35">Off</tspan></text>
+  <rect x="30" y="56" width="40" height="9" rx="4.5" fill="#8B5CF6"/>
+  <text x="50" y="63" text-anchor="middle" font-family="system-ui" font-weight="700" font-size="6" fill="#fff">SUPER ADMIN</text>
+</svg>
+</template>
+</body>
+</html>
