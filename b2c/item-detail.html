@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QOff — Détail article</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="screen">
+  <nav class="topbar sub-topbar">
+    <button class="topbar-icon" onclick="history.back()" aria-label="Retour" id="btn-back"></button>
+    <span class="logo center-logo">Q<em>O</em>ff</span>
+    <span style="width:44px"></span>
+  </nav>
+
+  <div class="scroll-area">
+    <div class="det-img" id="det-img"></div>
+    <div class="det-body" id="det-body"></div>
+    <div style="height:100px"></div>
+  </div>
+
+  <div class="det-add-bar">
+    <div class="qctrl big">
+      <button class="qbtn mi" id="btn-minus"></button>
+      <span class="qnum t-mono" id="qty-val">1</span>
+      <button class="qbtn pl" id="btn-plus"></button>
+    </div>
+    <button class="btn-primary det-add-btn" id="btn-add"></button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="icons.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const itemId = params.get('item') || 'spritz';
+  const barId  = params.get('bar') || getSelectedBar();
+  const item   = ITEMS[itemId] || Object.values(ITEMS)[0];
+
+  document.getElementById('btn-back').innerHTML = IC.back;
+
+  const hh   = item.hhPrice != null;
+  const sale = item.oldPrice != null;
+  const unit = hh ? item.hhPrice : item.price;
+
+  // Image placeholder
+  const imgEl = document.getElementById('det-img');
+  imgEl.innerHTML = `<div class="det-emoji">${item.emoji}</div>`;
+  if (hh) imgEl.innerHTML += `<span class="det-img-badge badge badge-hh">${IC.sun} Happy Hour</span>`;
+
+  // Body
+  let priceHtml;
+  if (hh)   priceHtml = `<span class="det-price sale t-mono">${formatPrice(item.hhPrice)}</span><span class="det-price-old t-mono">${formatPrice(item.price)}</span>`;
+  else if (sale) priceHtml = `<span class="det-price sale t-mono">${formatPrice(item.price)}</span><span class="det-price-old t-mono">${formatPrice(item.oldPrice)}</span>`;
+  else      priceHtml = `<span class="det-price t-mono">${formatPrice(item.price)}</span>`;
+  if (item.abv) priceHtml += `<span class="det-abv">${item.abv} vol.</span>`;
+
+  const tagMap = { vege:'tag-vege', vegan:'tag-vegan', solde:'tag-solde' };
+  const tagLabel = { vege:'Végé', vegan:'Vegan', solde:'Promo' };
+
+  let bodyHtml = `
+    <div class="det-cat t-label">${item.category || ''}</div>
+    <h1 class="det-name">${item.name}</h1>
+    <div class="det-price-row">${priceHtml}</div>
+    <p class="det-desc">${item.desc}</p>`;
+
+  if (item.ingredients && item.ingredients.length) {
+    bodyHtml += `<div class="det-sttl">Ingrédients</div><div class="chips">${item.ingredients.map(i=>`<span class="chip">${i}</span>`).join('')}</div>`;
+  }
+  if (item.allergens && item.allergens.length) {
+    bodyHtml += `<div class="det-sttl">Allergènes</div><div class="chips">${item.allergens.map(a=>`<span class="chip achip">⚠ ${a}</span>`).join('')}</div>`;
+  }
+  if (item.tags && item.tags.length) {
+    bodyHtml += `<div class="det-sttl">Régime</div><div class="chips">${item.tags.map(t=>`<span class="tag ${tagMap[t]||''}">${tagLabel[t]||t}</span>`).join('')}</div>`;
+  }
+  document.getElementById('det-body').innerHTML = bodyHtml;
+
+  // Stepper
+  let qty = 1;
+  function renderQty() {
+    document.getElementById('qty-val').textContent = qty;
+    document.getElementById('btn-add').innerHTML = `Ajouter · <span class="t-mono">${formatPrice(unit * qty)}</span>`;
+  }
+  document.getElementById('btn-minus').innerHTML = IC.minus;
+  document.getElementById('btn-plus').innerHTML  = IC.plus;
+  document.getElementById('btn-minus').addEventListener('click', () => { qty = Math.max(1, qty-1); renderQty(); });
+  document.getElementById('btn-plus').addEventListener('click',  () => { qty++; renderQty(); });
+  document.getElementById('btn-add').addEventListener('click', () => {
+    const cart = getCart();
+    cart[item.id] = (cart[item.id]||0) + qty;
+    setCart(cart);
+    window.location.href = `menu.html?bar=${barId}`;
+  });
+  renderQty();
+</script>
+</body>
+</html>

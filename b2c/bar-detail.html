@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>QOff — Détail bar</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="screen">
+  <div class="scroll-area" id="main">
+    <!-- Hero slider -->
+    <div class="hero" id="hero">
+      <div class="hero-track" id="hero-track"></div>
+      <a class="hero-back" href="index.html" aria-label="Retour">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      </a>
+      <div class="hero-overlay" id="hero-overlay"></div>
+      <div class="hero-dots" id="hero-dots"></div>
+    </div>
+
+    <!-- Temps d'attente -->
+    <div class="wait-row" id="wait-row"></div>
+
+    <!-- Happy Hour banner -->
+    <div id="hh-banner-wrap"></div>
+
+    <!-- À propos -->
+    <div class="detail-section" id="section-about"></div>
+
+    <!-- Infos pratiques -->
+    <div class="detail-section" id="section-infos"></div>
+
+    <!-- Horaires -->
+    <div class="detail-section" id="section-hours"></div>
+
+    <!-- Localisation mini-map -->
+    <div class="detail-section" id="section-map"></div>
+
+    <!-- Réseaux sociaux -->
+    <div class="detail-section" id="section-socials"></div>
+
+    <div style="height:100px"></div>
+  </div>
+
+  <div class="sticky-cta">
+    <a class="btn-primary" id="btn-menu" href="menu.html">Voir la carte&nbsp;&nbsp;→</a>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="icons.js"></script>
+<script>
+  // Lire le bar depuis l'URL ou sessionStorage
+  const params = new URLSearchParams(location.search);
+  const barId  = params.get('bar') || getSelectedBar();
+  setSelectedBar(barId);
+  const bar = BARS.find(b => b.id === barId) || BARS[0];
+
+  // ── Hero slider ──
+  let slideIdx = 0;
+  const track = document.getElementById('hero-track');
+  const dots  = document.getElementById('hero-dots');
+  bar.heroGradients.forEach((g, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'hero-slide';
+    slide.style.background = g;
+    slide.innerHTML = `<div style="position:absolute;inset:0;background:radial-gradient(circle at ${20+i*30}% ${30+i*10}%,rgba(255,255,255,0.12),transparent 50%)"></div><div class="hero-slide-label">photo ${i+1}/${bar.heroGradients.length}</div>`;
+    track.appendChild(slide);
+
+    const dot = document.createElement('span');
+    if (i === 0) dot.classList.add('active');
+    dot.addEventListener('click', () => goTo(i));
+    dots.appendChild(dot);
+  });
+  function goTo(i) {
+    slideIdx = i;
+    track.style.transform = `translateX(-${i*100}%)`;
+    dots.querySelectorAll('span').forEach((d,j) => d.classList.toggle('active', j===i));
+  }
+  // Swipe
+  let sx = 0;
+  track.parentElement.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, {passive:true});
+  track.parentElement.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - sx;
+    if (dx < -40 && slideIdx < bar.heroGradients.length-1) goTo(slideIdx+1);
+    if (dx >  40 && slideIdx > 0) goTo(slideIdx-1);
+  });
+
+  // ── Overlay (badges + nom + favori) ──
+  const favs = getFavs();
+  let isFav = favs.has(bar.id);
+  const overlay = document.getElementById('hero-overlay');
+  function renderOverlay() {
+    overlay.innerHTML = `
+      <div>
+        <div class="hero-badges">
+          <span class="badge" style="background:rgba(29,158,117,0.85);color:#fff"><span class="dot" style="background:#fff"></span>Ouvert</span>
+          ${bar.happyHour ? `<span class="badge badge-hh">${IC.sun} Happy Hour</span>` : ''}
+        </div>
+        <div class="hero-name-row">
+          <div class="hero-name">${bar.name}</div>
+          <button class="hero-fav${isFav?' on':''}" id="btn-fav" aria-label="Favori" aria-pressed="${isFav}" style="color:${isFav?'#F5B301':'rgba(255,255,255,0.72)'}">
+            ${IC.star(isFav?'#F5B301':'none')}
+          </button>
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.85);margin-top:4px">${bar.address}</div>
+      </div>`;
+    document.getElementById('btn-fav').addEventListener('click', () => {
+      const f = toggleFav(bar.id);
+      isFav = f.has(bar.id);
+      renderOverlay();
+    });
+  }
+  renderOverlay();
+
+  // ── Attente ──
+  document.getElementById('wait-row').innerHTML = `<span class="badge badge-wait">${IC.clock18} ≈ ${bar.wait} min d'attente</span>`;
+
+  // ── Happy Hour banner ──
+  if (bar.happyHour) {
+    document.getElementById('hh-banner-wrap').innerHTML = `
+      <div class="hh-banner">
+        <div>
+          <div class="hh-label">Happy Hour · 17h – 19h</div>
+          <h4>${bar.happyHour.label}</h4>
+          <div class="hh-sub">Aujourd'hui seulement</div>
+        </div>
+        <div class="hh-discount">${bar.happyHour.discount}</div>
+      </div>`;
+  }
+
+  // ── À propos ──
+  document.getElementById('section-about').innerHTML = `<h3>À propos</h3><p style="font-size:14px;color:var(--ink-2);line-height:1.55">${bar.description}</p>`;
+
+  // ── Infos pratiques ──
+  document.getElementById('section-infos').innerHTML = `
+    <h3>Infos pratiques</h3>
+    <div class="info-row">${IC.pin}<div><div class="info-text">${bar.address}</div><div class="info-sub">à ${bar.distance} de vous</div></div></div>
+    <div class="info-row">${IC.phone}<div class="info-text t-mono">${bar.phone}</div></div>
+    <div class="info-row">${IC.web}<div class="info-text">${bar.web}</div></div>`;
+
+  // ── Horaires ──
+  const hRows = bar.hours.map(([day,h],i) => `
+    <div class="${i===bar.todayIdx?'day today':'day'}">${day}${i===bar.todayIdx?" · aujourd'hui":''}</div>
+    <div class="${i===bar.todayIdx?'h today':'h'}"><span class="h t-mono">${h}</span></div>`).join('');
+  document.getElementById('section-hours').innerHTML = `<h3>Horaires</h3><div class="hours-grid">${hRows}</div>`;
+
+  // ── Mini-map ──
+  document.getElementById('section-map').innerHTML = `
+    <h3>Localisation</h3>
+    <div class="mini-map">
+      <svg viewBox="0 0 390 160" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block">
+        <rect width="390" height="160" fill="#EDE7DA"/>
+        <g stroke="#FFFFFF" stroke-width="6" fill="none" opacity="0.9">
+          <path d="M-10 60 L 410 75"/><path d="M-10 100 L 410 110"/>
+          <path d="M60 -10 L 80 180"/><path d="M150 -10 L 170 180"/><path d="M240 -10 L 260 180"/>
+        </g>
+        <path d="M-20 115 Q 200 130 410 120 L 410 180 L -20 180 Z" fill="#A8C8D6"/>
+      </svg>
+      <div class="map-pin" style="position:absolute;left:${bar.pin.left}%;top:${bar.pin.top}%">
+        <div class="map-pin-body"><span class="num">📍</span>${bar.name.split(' ')[0]}</div>
+        <div class="map-pin-tail"></div>
+      </div>
+    </div>`;
+
+  // ── Réseaux ──
+  const socMap = { Instagram: IC.insta, Facebook: IC.fb, TikTok: IC.tik };
+  const chips = bar.socials.map(s => `<div class="social-chip">${socMap[s]||''} ${s}</div>`).join('');
+  document.getElementById('section-socials').innerHTML = `<h3>Réseaux</h3><div class="socials">${chips}</div>`;
+
+  // Lien "Voir la carte"
+  document.getElementById('btn-menu').href = `menu.html?bar=${barId}`;
+</script>
+</body>
+</html>
